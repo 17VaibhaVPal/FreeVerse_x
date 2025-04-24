@@ -4,7 +4,7 @@ import { Geist_Mono } from "next/font/google";
 import '@/styles/globals.css';
 
 import { BsTwitterX } from "react-icons/bs";
-import React from "react";
+import React, { useCallback } from "react";
 import { BiDollar, BiSolidHome } from "react-icons/bi";
 import { FaHashtag } from "react-icons/fa6";
 import { FaBell } from "react-icons/fa";
@@ -13,8 +13,25 @@ import { FaBookmark } from "react-icons/fa";
 import { FaUserAlt } from "react-icons/fa";
 import FeedCard from "@/components/FeedCard";
 import { SlOptions } from "react-icons/sl";
+import { CredentialResponse, GoogleLogin } from "@react-oauth/google";
 
 
+import { gql } from "@apollo/client";
+import toast from "react-hot-toast";
+import { graphqlClient } from "@/clients/api";
+import { verifyUserGoogleTokenQuery } from "@/graphql/queries/user";
+
+
+const USERS_QUERY = gql`
+  query Users {
+    users {
+      id
+      firstName
+      lastName
+      email
+    }
+  }
+`;
 
 
 
@@ -57,7 +74,7 @@ const sidebarMenuItems: TwitterSidebarButton[] = [
   },
   {
     title: "Twitter Blue",
-    icon:<BiDollar />,
+    icon: <BiDollar />,
   },
   {
     title: "Profile",
@@ -70,6 +87,26 @@ const sidebarMenuItems: TwitterSidebarButton[] = [
 
 ];
 export default function Home() {
+
+  const handleLoginWithGoogle = useCallback(async (cred: CredentialResponse) => {
+    const googleToken = cred.credential
+
+    if (!googleToken) return toast.error(`Google token not found`)
+
+    const { verifyGoogleToken } = await graphqlClient.request(
+      verifyUserGoogleTokenQuery,
+      { token: googleToken }
+    );
+
+    toast.success("Verified token");
+    console.log(verifyGoogleToken);
+
+    if (verifyGoogleToken)
+       window.localStorage.setItem("__twitter_token", verifyGoogleToken);
+  },
+   [])
+
+
   return (
     <div >
       <div className="grid grid-cols-12 h-screen w-screen px-36">
@@ -105,18 +142,21 @@ export default function Home() {
 
 
         <div className="col-span-5 border-r border-l  border-gray-600 h-screen overflow-y-scroll scrollbar-hide ">
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          <FeedCard/>
-          
-        </div>
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
+          <FeedCard />
 
-        
-        <div className="col-span-3"></div>
+        </div>
+        <div className="col-span-3">
+          <div className="p-5 ml-2 mt-2 bg-slate-700 rounded-lg">
+            <h1 className="my-0.5 text-2xl">New to Twitter?</h1>
+            <GoogleLogin onSuccess={handleLoginWithGoogle} />
+          </div>
+        </div>
       </div>
     </div>
   );
