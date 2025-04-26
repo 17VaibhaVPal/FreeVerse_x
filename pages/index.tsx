@@ -20,6 +20,10 @@ import { gql } from "@apollo/client";
 import toast from "react-hot-toast";
 import { graphqlClient } from "@/clients/api";
 import { verifyUserGoogleTokenQuery } from "@/graphql/queries/user";
+import { useCurrentUser } from "@/hooks/user";
+import { useQueryClient } from "@tanstack/react-query";
+import { ImGift } from "react-icons/im";
+import { imageConfigDefault } from "next/dist/shared/lib/image-config";
 
 
 const USERS_QUERY = gql`
@@ -87,7 +91,9 @@ const sidebarMenuItems: TwitterSidebarButton[] = [
 
 ];
 export default function Home() {
-
+  const { user } = useCurrentUser()
+  console.log(user)
+  const queryClient = useQueryClient()
   const handleLoginWithGoogle = useCallback(async (cred: CredentialResponse) => {
     const googleToken = cred.credential
 
@@ -102,9 +108,12 @@ export default function Home() {
     console.log(verifyGoogleToken);
 
     if (verifyGoogleToken)
-       window.localStorage.setItem("__twitter_token", verifyGoogleToken);
+      window.localStorage.setItem("__twitter_token", verifyGoogleToken);
+
+    await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+
   },
-   [])
+    [queryClient])
 
 
   return (
@@ -112,7 +121,7 @@ export default function Home() {
       <div className="grid grid-cols-12 h-screen w-screen px-36">
 
 
-        <div className="col-span-3 pt-1 px-4  ml-28 flex flex-col items-end ">
+        <div className="col-span-3 pt-1 px-4  ml-28 flex flex-col items-end relative">
           <div className="flex flex-col gap-2 items-start w-fit">
 
 
@@ -133,11 +142,29 @@ export default function Home() {
               ))}
             </ul>
 
-
             <button className="bg-[#1d6bf0] font-semibold text-sm py-2 px-4 rounded-full w-full mt-4 cursor-pointer">
               Tweet
             </button>
           </div>
+          {user && (
+            <div className="mr-35 mt-4 bottom-5 left-0 flex items-center gap-3 p-3 rounded-full hover:bg-gray-800 cursor-pointer transition-all w-full pr-5">
+              {user.profileImageURL && (
+                <Image
+                  className="rounded-full"
+                  src={user.profileImageURL}
+                  alt="user-image"
+                  height={40}
+                  width={40}
+                />
+              )}
+              <div className="flex flex-col leading-tight">
+                <span className="font-semibold text-white text-sm">{user.firstName} {user.lastName}</span>
+                <span className="text-gray-400 text-xs">@{user.email}</span>
+              </div>
+            </div>
+          )}
+
+
         </div>
 
 
@@ -152,10 +179,12 @@ export default function Home() {
 
         </div>
         <div className="col-span-3">
-          <div className="p-5 ml-2 mt-2 bg-slate-700 rounded-lg">
-            <h1 className="my-0.5 text-2xl">New to Twitter?</h1>
-            <GoogleLogin onSuccess={handleLoginWithGoogle} />
-          </div>
+          {!user && (
+            <div className="p-5 ml-2 mt-2 bg-slate-700 rounded-lg">
+              <h1 className="my-0.5 text-2xl">New to Twitter?</h1>
+              <GoogleLogin onSuccess={handleLoginWithGoogle} />
+            </div>
+          )}
         </div>
       </div>
     </div>
