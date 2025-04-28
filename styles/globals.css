@@ -53,4 +53,7 @@ body {
 .scrollbar-hide:hover {
   scrollbar-color: rgba(100, 100, 100, 0.4) transparent;
 }
+*:focus {
+  outline: none;
+}
 

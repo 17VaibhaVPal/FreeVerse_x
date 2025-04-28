@@ -1,12 +1,12 @@
 import Image from "next/image";
 import { Geist } from "next/font/google";
 import { Geist_Mono } from "next/font/google";
-import '@/styles/globals.css';
+import "@/styles/globals.css";
 
 import { BsTwitterX } from "react-icons/bs";
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { BiDollar, BiSolidHome } from "react-icons/bi";
-import { FaHashtag } from "react-icons/fa6";
+import { FaHashtag, FaImage } from "react-icons/fa6";
 import { FaBell } from "react-icons/fa";
 import { MdMessage } from "react-icons/md";
 import { FaBookmark } from "react-icons/fa";
@@ -15,16 +15,16 @@ import FeedCard from "@/components/FeedCard";
 import { SlOptions } from "react-icons/sl";
 import { CredentialResponse, GoogleLogin } from "@react-oauth/google";
 
-
 import { gql } from "@apollo/client";
 import toast from "react-hot-toast";
 import { graphqlClient } from "@/clients/api";
-import { verifyUserGoogleTokenQuery } from "@/graphql/queries/user";
+import { verifyUserGoogleTokenQuery } from "@/graphql/query/user";
 import { useCurrentUser } from "@/hooks/user";
 import { useQueryClient } from "@tanstack/react-query";
 import { ImGift } from "react-icons/im";
 import { imageConfigDefault } from "next/dist/shared/lib/image-config";
-
+import { useCreateTweet, useGetAllTweets } from "@/hooks/tweet";
+import { Tweet } from "@/gql/graphql";
 
 const USERS_QUERY = gql`
   query Users {
@@ -37,8 +37,6 @@ const USERS_QUERY = gql`
   }
 `;
 
-
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -48,8 +46,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-
 
 interface TwitterSidebarButton {
   title: string;
@@ -88,47 +84,61 @@ const sidebarMenuItems: TwitterSidebarButton[] = [
     title: "More",
     icon: <SlOptions />,
   },
-
 ];
 export default function Home() {
-  const { user } = useCurrentUser()
-  console.log(user)
-  const queryClient = useQueryClient()
-  const handleLoginWithGoogle = useCallback(async (cred: CredentialResponse) => {
-    const googleToken = cred.credential
+  const { user } = useCurrentUser();
 
-    if (!googleToken) return toast.error(`Google token not found`)
+  const { tweets = [] } = useGetAllTweets();
+  const {mutate} = useCreateTweet();
 
-    const { verifyGoogleToken } = await graphqlClient.request(
-      verifyUserGoogleTokenQuery,
-      { token: googleToken }
-    );
+  const queryClient = useQueryClient();
+  const [content, setContent] = useState("");
 
-    toast.success("Verified token");
-    console.log(verifyGoogleToken);
+  const handleCreateTweet = useCallback(() =>{
+    if (!content.trim()) {
+      return toast.error("Tweet content cannot be empty!");
+    }
+    mutate({
+      content,
+    });
+  },[content ,mutate])
+  const handleSelectImage = useCallback(() => {
+    const input = document.createElement("input");
+    input.setAttribute("type", "file");
+    input.setAttribute("accept", "image/*");
+    input.click();
+  }, []);
 
-    if (verifyGoogleToken)
-      window.localStorage.setItem("__twitter_token", verifyGoogleToken);
+  const handleLoginWithGoogle = useCallback(
+    async (cred: CredentialResponse) => {
+      const googleToken = cred.credential;
 
-    await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+      if (!googleToken) return toast.error(`Google token not found`);
 
-  },
-    [queryClient])
+      const { verifyGoogleToken } = await graphqlClient.request(
+        verifyUserGoogleTokenQuery,
+        { token: googleToken }
+      );
 
+      toast.success("Verified token");
+      console.log(verifyGoogleToken);
+
+      if (verifyGoogleToken)
+        window.localStorage.setItem("__twitter_token", verifyGoogleToken);
+
+      await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+    },
+    [queryClient]
+  );
 
   return (
-    <div >
+    <div>
       <div className="grid grid-cols-12 h-screen w-screen px-36">
-
-
         <div className="col-span-3 pt-1 px-4  ml-28 flex flex-col items-end relative">
           <div className="flex flex-col gap-2 items-start w-fit">
-
-
             <div className="hover:bg-gray-800 rounded-full p-3 cursor-pointer transition-all">
               <BsTwitterX className="text-xl" />
             </div>
-
 
             <ul className="text-base font-medium">
               {sidebarMenuItems.map((item) => (
@@ -158,25 +168,52 @@ export default function Home() {
                 />
               )}
               <div className="flex flex-col leading-tight">
-                <span className="font-semibold text-white text-sm">{user.firstName} {user.lastName}</span>
+                <span className="font-semibold text-white text-sm">
+                  {user.firstName} {user.lastName}
+                </span>
                 <span className="text-gray-400 text-xs">@{user.email}</span>
               </div>
             </div>
           )}
-
-
         </div>
 
-
         <div className="col-span-5 border-r border-l  border-gray-600 h-screen overflow-y-scroll scrollbar-hide ">
-          <FeedCard />
-          <FeedCard />
-          <FeedCard />
-          <FeedCard />
-          <FeedCard />
-          <FeedCard />
-          <FeedCard />
+          <div>
+            <div className="border border-r-0 border-l-0 border-b-0 border-gray-600 p-5 hover:bg-slate-900 transition-all cursor-pointer">
+              <div className="grid grid-cols-12 gap-3">
+                <div className="col-span-1">
+                  {user?.profileImageURL && (
+                    <Image
+                      className="rounded-full"
+                      src={user?.profileImageURL}
+                      alt="user-image"
+                      height={50}
+                      width={50}
+                    />
+                  )}
+                </div>
+                <div className="col-span-11">
+                  <textarea
+                    value={content}
+                    onChange={(e) => setContent(e.target.value)}
+                    className="w-full bg-transparent text-xl px-3 border-b-2 border-slate-700"
+                    placeholder="What's happening ?"
+                    rows={3}
+                  ></textarea>
+                  <div className="mt-2 flex justify-between items-center">
+                    <FaImage onClick={handleSelectImage} className="text-xl" />
+                    <button onClick={handleCreateTweet} className="bg-[#1d6bf0] font-semibold text-sm py-2 px-4 rounded-full cursor-pointer">
+                      Tweet
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
+          {tweets?.map((tweet) =>
+            tweet ? <FeedCard key={tweet?.id} data={tweet as Tweet} /> : null
+          )}
         </div>
         <div className="col-span-3">
           {!user && (
