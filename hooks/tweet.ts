@@ -1,4 +1,5 @@
-import { graphqlClient } from "@/clients/api";
+import { getGraphqlClient } from "@/clients/api";
+
 import { CreateTweetData } from "@/gql/graphql";
 import { createTweetMutation } from "@/graphql/mutations/tweet";
 import { getAllTweetsQuery } from "@/graphql/query/tweet";
@@ -14,7 +15,7 @@ export const useCreateTweet = () => {
 
   const mutation = useMutation({
     mutationFn: (payload: CreateTweetData) =>
-      graphqlClient.request(createTweetMutation , { payload }),
+      getGraphqlClient().request(createTweetMutation , { payload }),
     onMutate: () => {
         toast.loading("Creating Tweet...");
       },
@@ -37,7 +38,7 @@ export const useCreateTweet = () => {
 export const useGetAllTweets = () => {
   const query = useQuery({
     queryKey: ["all-tweets"],
-    queryFn: () => graphqlClient.request(getAllTweetsQuery),
+    queryFn: () => getGraphqlClient().request(getAllTweetsQuery),
   });
   return { ...query, tweets: query.data?.getAllTweets };
 };
