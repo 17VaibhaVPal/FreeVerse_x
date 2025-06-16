@@ -10,9 +10,31 @@ const getCurrentUserQuery = `
       email
       firstName
       lastName
+
+       recommendedUser {
+        id
+        email
+        firstName
+        lastName
+        profileImageURL
+      }
+
+      followers{
+      id
+      firstName
+      lastName
+      profileImageURL
+      }
+      following{
+      id
+      firstName
+      lastName
+      profileImageURL
+      }
       tweets{
       id
       content
+      isBookmarked
       author {
       id
       firstName
@@ -34,10 +56,36 @@ interface GetCurrentUserResponse {
     email: string;
     firstName: string;
     lastName: string;
+
+    recommendedUser: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      profileImageURL: string;
+    }[];
+    followers: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      profileImageURL: string;
+    }[];
+    following: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      profileImageURL: string;
+    }[];
     tweets: {
       id: string;
       content: string;
-      
+      isBookmarked: boolean
+      author: {
+        id: string;
+        firstName: string;
+        lastName: string;
+        profileImageURL: string;
+      };
     }[];
   };
 }
@@ -47,7 +95,8 @@ export const useCurrentUser = () => {
     queryKey: ["current-user"],
     queryFn: () =>
       getGraphqlClient().request<GetCurrentUserResponse>(getCurrentUserQuery),
+     staleTime: 0,
   });
+  console.log("Running useCurrentUser, data:", query.data);
   return { ...query, user: query.data?.getCurrentUser };
 };
-

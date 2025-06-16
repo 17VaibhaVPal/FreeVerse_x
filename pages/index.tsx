@@ -1,6 +1,8 @@
 import Image from "next/image";
 import "@/styles/globals.css";
 import React, { useCallback, useState } from "react";
+import { getBookmarkedTweetsQuery } from "@/graphql/query/user";
+import { useQuery } from "@tanstack/react-query";
 
 import { FaImage } from "react-icons/fa6";
 import FeedCard from "@/components/FeedCard";
@@ -11,30 +13,101 @@ import { Tweet } from "@/gql/graphql";
 import Twitterlayout from "@/components/FeedCard/layout/TwitterLayout";
 import { GetServerSideProps } from "next";
 import { getGraphqlClient } from "@/clients/api";
-import { getAllTweetsQuery } from "@/graphql/query/tweet";
+import {
+  getAllTweetsQuery,
+  getSignedURLForTweetQuery,
+} from "@/graphql/query/tweet";
+import { parse } from "cookie";
+
+import axios from "axios";
 
 interface HomeProps {
   tweets?: Tweet[];
+  
 }
 export default function Home(props: HomeProps) {
   const { user } = useCurrentUser();
+  const { tweets = props.tweets as Tweet[] } = useGetAllTweets(); 
+  // m making use of get all tweets but default there is some data coming from the server
+  //making a state copy of what so ever coming from server side
+  //done by "sever side" rendering , need -> so that we have some data initially whenevr we server side load this page 
+  const { mutateAsync } = useCreateTweet();
 
-  const { mutate } = useCreateTweet();
+
+  
 
   const [content, setContent] = useState("");
+  const [imageURL, setImageURL] = useState("");
 
-  const handleCreateTweet = useCallback(() => {
+  ///
+  const { data: bookmarksData } = useQuery({
+    queryKey: ["bookmarkedTweets"],
+    queryFn: async () => {
+      const client = getGraphqlClient();
+      const res = await client.request(getBookmarkedTweetsQuery);
+      return res.getBookmarkedTweets?.map((tweet) => tweet.id) || [];
+    },
+    enabled: !!user?.id,
+  });
+  ///
+ 
+
+  const handleCreateTweet = useCallback(async () => {
     if (!content.trim()) {
       return toast.error("Tweet content cannot be empty!");
     }
-    mutate({
+    await mutateAsync({
       content,
+      imageURL,
     });
-  }, [content, mutate]);
+    setContent("");
+    setImageURL("");
+  }, [content, mutateAsync, imageURL]);
+
+  const handleInputChangeFile = useCallback((input: HTMLInputElement) => {
+    const graphqlClient = getGraphqlClient();
+
+    return async (event: Event) => {
+      event.preventDefault();
+      const file: File | null | undefined = input.files?.item(0);
+      if (!file) return;
+
+      console.log("Image name:", file.name);
+      console.log("Image type:", file.type);
+
+      const { getSignedURLForTweet } = await graphqlClient.request(
+        getSignedURLForTweetQuery,
+        {
+          imageName: file.name,
+          imageType: file.type,
+        }
+      );
+
+      if (getSignedURLForTweet) {
+        toast.loading("Uploading...", { id: "2" });
+        await axios.put(getSignedURLForTweet, file, {
+          headers: {
+            "Content-Type": file.type,
+          },
+        });
+
+        toast.success("Upload completed", { id: "2" });
+        const url = new URL(getSignedURLForTweet);
+        const myFilepath = `${url.origin}${url.pathname}`;
+        setImageURL(myFilepath);
+      }
+    };
+  }, []);
+
   const handleSelectImage = useCallback(() => {
     const input = document.createElement("input");
     input.setAttribute("type", "file");
     input.setAttribute("accept", "image/*");
+
+    const handlerFn = handleInputChangeFile(input);
+
+    input.addEventListener("change", handlerFn);
+
     input.click();
   }, []);
 
@@ -63,6 +136,14 @@ export default function Home(props: HomeProps) {
                   placeholder="What's happening ?"
                   rows={3}
                 ></textarea>
+                {imageURL && (
+                  <Image
+                    src={imageURL}
+                    alt="tweet-image"
+                    width={300}
+                    height={300}
+                  />
+                )}
                 <div className="mt-2 flex justify-between items-center">
                   <FaImage onClick={handleSelectImage} className="text-xl" />
                   <button
@@ -77,23 +158,43 @@ export default function Home(props: HomeProps) {
           </div>
         </div>
 
-        {props.tweets?.map((tweet) =>
-          tweet ? <FeedCard key={tweet?.id} data={tweet as Tweet} /> : null
-        )}
+       {tweets?.map((tweet) =>
+  tweet ? (
+    <FeedCard
+      key={tweet?.id}
+      data={tweet as Tweet}
+      isBookmarked={bookmarksData?.includes(tweet.id)}
+    />
+  ) : null
+)}
+
+
       </Twitterlayout>
     </div>
   );
 }
-//"server side rendering"
-// wwhic  makes our page more secure and fast
-export const getServerSideProps: GetServerSideProps<HomeProps> = async (
-  context
-) => {
-  const graphqlClient = getGraphqlClient();
-  const allTweets = await graphqlClient.request(getAllTweetsQuery);
-  return {
-    props: {
-      tweets: allTweets.getAllTweets as Tweet[],
-    },
-  };
+
+export const getServerSideProps: GetServerSideProps<HomeProps> = async (context) => {
+  const cookies = context.req.headers.cookie || "";
+  const { __twitter_token: token } = parse(cookies);
+
+
+  const graphqlClient = getGraphqlClient(token); // pass token to include Authorization header
+
+  try {
+    const { getAllTweets } = await graphqlClient.request(getAllTweetsQuery);
+
+    return {
+      props: {
+        tweets: getAllTweets as Tweet[],
+      },
+    };
+  } catch (err) {
+    console.error("SSR Tweet fetch failed:", err);
+    return {
+      props: {
+        tweets: [],
+      },
+    };
+  }
 };

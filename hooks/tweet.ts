@@ -35,6 +35,7 @@ export const useCreateTweet = () => {
 
   return mutation;
 };
+
 export const useGetAllTweets = () => {
   const query = useQuery({
     queryKey: ["all-tweets"],
