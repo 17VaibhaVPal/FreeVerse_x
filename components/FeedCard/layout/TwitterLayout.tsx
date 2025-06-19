@@ -64,7 +64,7 @@ const Twitterlayout: React.FC<TwitterlayoutProps> = (props) => {
       {
         title: "Profile",
         icon: <FaUserAlt />,
-        link: `/${user?.id}`,
+         link: user?.id ? `/user/${user.id}` : "/sign-in",
       },
       {
         title: "More",
@@ -86,19 +86,28 @@ const Twitterlayout: React.FC<TwitterlayoutProps> = (props) => {
       const googleToken = cred.credential;
       if (!googleToken) return toast.error(`Google token not found`);
 
-      const { verifyGoogleToken } = await getGraphqlClient().request(
-        verifyUserGoogleTokenQuery,
-        { token: googleToken }
-      );
+      try {
+        const { verifyGoogleToken } = await getGraphqlClient().request(
+          verifyUserGoogleTokenQuery,
+          { token: googleToken }
+        );
 
-      if (verifyGoogleToken)
-        window.localStorage.setItem("__twitter_token", verifyGoogleToken);
+        if (verifyGoogleToken) {
+          window.localStorage.setItem("__twitter_token", verifyGoogleToken);
 
-      toast.success("Verified token");
-      await queryClient.invalidateQueries({ queryKey: ["current-user"] });
-      await queryClient.refetchQueries({ queryKey: ["current-user"] });
+          toast.success("Verified token");
+
+          // ✅ KEY LINE: Force reload so React Query and layout re-run
+          await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+
+          window.location.reload();
+        }
+      } catch (err) {
+        toast.error("Login failed");
+        console.error("Google login error:", err);
+      }
     },
-    [queryClient]
+    []
   );
 
   return (

@@ -1,5 +1,6 @@
 import { getGraphqlClient } from "@/clients/api";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 //  Plain query
 const getCurrentUserQuery = `
@@ -91,6 +92,33 @@ interface GetCurrentUserResponse {
 }
 
 export const useCurrentUser = () => {
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const localToken = localStorage.getItem("__twitter_token");
+    setToken(localToken);
+  }, []);
+
+  const query = useQuery({
+    queryKey: ["current-user", token], // include token in queryKey for refresh
+    queryFn: () =>
+      getGraphqlClient(token || undefined).request<GetCurrentUserResponse>(
+        getCurrentUserQuery
+      ),
+    enabled: !!token,
+    staleTime: 0,
+  });
+
+  if (query.error) {
+    console.error("❌ useCurrentUser error:", query.error);
+  }
+
+  return { ...query, user: query.data?.getCurrentUser };
+};
+
+
+/*
+export const useCurrentUser = () => {
   const query = useQuery({
     queryKey: ["current-user"],
     queryFn: () =>
@@ -100,3 +128,4 @@ export const useCurrentUser = () => {
   console.log("Running useCurrentUser, data:", query.data);
   return { ...query, user: query.data?.getCurrentUser };
 };
+*/
