@@ -1,5 +1,5 @@
 import Image from "next/image";
-import "@/styles/globals.css";
+
 import React, { useCallback, useState } from "react";
 import { getBookmarkedTweetsQuery } from "@/graphql/query/user";
 import { useQuery } from "@tanstack/react-query";
@@ -18,23 +18,18 @@ import {
   getSignedURLForTweetQuery,
 } from "@/graphql/query/tweet";
 import { parse } from "cookie";
-
 import axios from "axios";
 
 interface HomeProps {
   tweets?: Tweet[];
-  
 }
 export default function Home(props: HomeProps) {
   const { user } = useCurrentUser();
-  const { tweets = props.tweets as Tweet[] } = useGetAllTweets(); 
+  const { tweets = props.tweets as Tweet[] } = useGetAllTweets();
   // m making use of get all tweets but default there is some data coming from the server
   //making a state copy of what so ever coming from server side
-  //done by "sever side" rendering , need -> so that we have some data initially whenevr we server side load this page 
+  //done by "sever side" rendering , need -> so that we have some data initially whenevr we server side load this page
   const { mutateAsync } = useCreateTweet();
-
-
-  
 
   const [content, setContent] = useState("");
   const [imageURL, setImageURL] = useState("");
@@ -50,7 +45,6 @@ export default function Home(props: HomeProps) {
     enabled: !!user?.id,
   });
   ///
- 
 
   const handleCreateTweet = useCallback(async () => {
     if (!content.trim()) {
@@ -158,26 +152,25 @@ export default function Home(props: HomeProps) {
           </div>
         </div>
 
-       {tweets?.map((tweet) =>
-  tweet ? (
-    <FeedCard
-      key={tweet?.id}
-      data={tweet as Tweet}
-      isBookmarked={bookmarksData?.includes(tweet.id)}
-    />
-  ) : null
-)}
-
-
+        {tweets?.map((tweet) =>
+          tweet ? (
+            <FeedCard
+              key={tweet?.id}
+              data={tweet as Tweet}
+              isBookmarked={bookmarksData?.includes(tweet.id)}
+            />
+          ) : null
+        )}
       </Twitterlayout>
     </div>
   );
 }
 
-export const getServerSideProps: GetServerSideProps<HomeProps> = async (context) => {
+export const getServerSideProps: GetServerSideProps<HomeProps> = async (
+  context
+) => {
   const cookies = context.req.headers.cookie || "";
   const { __twitter_token: token } = parse(cookies);
-
 
   const graphqlClient = getGraphqlClient(token); // pass token to include Authorization header
 
