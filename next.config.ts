@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
     ],
   },
   eslint: {
-    ignoreDuringBuilds: true, // ✅ Add this line to skip lint errors in production build
+    ignoreDuringBuilds: true, 
   },
 };
 
