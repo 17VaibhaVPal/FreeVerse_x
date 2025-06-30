@@ -118,14 +118,14 @@ import {
                 {amIFollowing ? (
                   <button
                     onClick={handleUnFollowUser}
-                    className="bg-white text-black px-3 py-1 rounded-full text-sm"
+                    className="bg-white text-black px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-gray-200 hover:scale-105 hover:shadow-md transition duration-200"
                   >
                     Unfollow
                   </button>
                 ) : (
                   <button
                     onClick={handleFollowUser}
-                    className="bg-white text-black px-3 py-1 rounded-full text-sm"
+                    className="bg-white text-black px-3 py-1 rounded-full text-sm cursor-pointer hover:bg-gray-200 hover:scale-105 hover:shadow-md transition duration-200"
                   >
                     Follow
                   </button>

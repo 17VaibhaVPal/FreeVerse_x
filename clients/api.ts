@@ -15,7 +15,6 @@ export const getGraphqlClient = (token?: string): GraphQLClient => {
       headers.Authorization = `Bearer ${clientToken}`;
     }
   }
-  
   //https://d2ulf7ww0gvd5i.cloudfront.net/graphql -> use this apollo deployed server
 
   return new GraphQLClient(process.env.NEXT_PUBLIC_API_URL as string, {

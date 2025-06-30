@@ -49,3 +49,6 @@ export const sendMessageMutation = graphql(`
     sendMessage(to: $to, content: $content)
   }
 `);
+
+
+

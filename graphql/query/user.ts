@@ -42,6 +42,9 @@
         tweets {
           content
           id
+           isLiked         
+        likesCount  
+
           author {
             id
             firstName
@@ -77,6 +80,10 @@
           content
           id
           isBookmarked
+
+            isLiked           
+            likesCount 
+
           author {
             id
             firstName
@@ -95,7 +102,11 @@
         id
         content
         imageURL
-        isBookmarked   
+        isBookmarked
+
+          isLiked          
+         likesCount   
+
         author {
           id
           firstName

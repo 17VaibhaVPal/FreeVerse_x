@@ -7,6 +7,24 @@ export const getAllTweetsQuery = graphql(`
       id
       content
       imageURL
+      isBookmarked
+
+      isLiked        
+      likesCount      
+
+      commentsCount   
+      comments {       
+        id
+        content
+        createdAt
+        user {
+          id
+          firstName
+          lastName
+          profileImageURL
+        }
+      }
+
       author {
         id
         firstName
@@ -20,5 +38,23 @@ export const getAllTweetsQuery = graphql(`
 export const getSignedURLForTweetQuery = graphql(`
   query GetSignedURL($imageName: String!, $imageType: String!) {
     getSignedURLForTweet(imageName: $imageName, imageType: $imageType)
+  }
+`);
+
+//added new 
+
+export const getCommentsQuery = graphql(`
+  query GetComments($tweetId: ID!) {
+    getComments(tweetId: $tweetId) {
+      id
+      content
+      createdAt
+      user {
+        id
+        firstName
+        lastName
+        profileImageURL
+      }
+    }
   }
 `);

@@ -13,6 +13,7 @@ import { CredentialResponse, GoogleLogin } from "@react-oauth/google";
 import { getGraphqlClient } from "@/clients/api";
 import toast from "react-hot-toast";
 import { verifyUserGoogleTokenQuery } from "@/graphql/query/user";
+import {  useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { gql } from "graphql-request";
 import { GoBookmark } from "react-icons/go";
@@ -98,7 +99,7 @@ const Twitterlayout: React.FC<TwitterlayoutProps> = (props) => {
 
           toast.success("Verified token");
 
-          // ✅ KEY LINE: Force reload so React Query and layout re-run
+          
           await queryClient.invalidateQueries({ queryKey: ["current-user"] });
 
           window.location.reload();
@@ -205,7 +206,7 @@ const Twitterlayout: React.FC<TwitterlayoutProps> = (props) => {
                         {el?.firstName} {el?.lastName}
                       </span>
                       <Link
-                        href={`/${el?.id}`}
+                        href={`/user/${el?.id}`}
                         className="mt-1 inline-flex items-center justify-center bg-white hover:bg-gray-200 text-black text-xs font-semibold px-4 py-1 rounded-full transition-all"
                       >
                         View
@@ -225,6 +226,7 @@ const Twitterlayout: React.FC<TwitterlayoutProps> = (props) => {
 // More dropdown component
 const MoreDropdown = ({ icon }: { icon: React.ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const toggleDropdown = () => setIsOpen((prev) => !prev);
@@ -248,8 +250,25 @@ const MoreDropdown = ({ icon }: { icon: React.ReactNode }) => {
       ? localStorage.getItem("__twitter_token")
       : null;
 
+      // ✅ Close on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
-    <div className="relative">
+   <div className="relative" ref={dropdownRef}>
       <div
         className="flex items-center gap-4 hover:bg-gray-800 rounded-full px-2 py-2 w-fit cursor-pointer"
         onClick={toggleDropdown}

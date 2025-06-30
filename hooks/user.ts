@@ -36,6 +36,8 @@ const getCurrentUserQuery = `
       id
       content
       isBookmarked
+       isLiked           
+      likesCount        
       author {
       id
       firstName
@@ -81,6 +83,10 @@ interface GetCurrentUserResponse {
       id: string;
       content: string;
       isBookmarked: boolean
+
+      isLiked: boolean;      
+  likesCount: number;  
+    
       author: {
         id: string;
         firstName: string;
