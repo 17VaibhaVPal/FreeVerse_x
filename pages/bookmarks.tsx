@@ -8,7 +8,6 @@ import { GetBookmarkedTweetsQuery, Tweet } from "@/gql/graphql";
 import FeedCard from "@/components/FeedCard";
 import toast from "react-hot-toast";
 
-// ✅ Use type compatible with query
 type BookmarkedTweet = {
   id: string;
   content: string;
@@ -33,8 +32,14 @@ export default function BookmarksPage() {
     const fetchBookmarks = async () => {
       try {
         const client = getGraphqlClient();
-        const res: GetBookmarkedTweetsQuery = await client.request(getBookmarkedTweetsQuery);
-        setBookmarks(res.getBookmarkedTweets || []);
+        const res: GetBookmarkedTweetsQuery = await client.request(
+          getBookmarkedTweetsQuery
+        );
+        const sanitized = (res.getBookmarkedTweets || []).map((tweet) => ({
+          ...tweet,
+          isBookmarked: tweet.isBookmarked ?? false,
+        }));
+        setBookmarks(sanitized);
       } catch (error) {
         console.error("Client-side bookmarks fetch error:", error);
         toast.error("Failed to load bookmarks.");
@@ -55,7 +60,9 @@ export default function BookmarksPage() {
         ) : bookmarks.length === 0 ? (
           <p>No bookmarks yet.</p>
         ) : (
-          bookmarks.map((tweet) => <FeedCard key={tweet.id} data={tweet as unknown as Tweet} />)
+          bookmarks.map((tweet) => (
+            <FeedCard key={tweet.id} data={tweet as unknown as Tweet} />
+          ))
         )}
       </div>
     </TwitterLayout>
