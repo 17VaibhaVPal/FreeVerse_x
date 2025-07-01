@@ -2,9 +2,8 @@
 
   const config: CodegenConfig = {
     overwrite: true,
-  schema: "http://localhost:8000/graphql",
+  schema: "https://freeverse-x-server.onrender.com/graphql",
 
-    //get schemna form here ->>  https://freeverse-x-server.onrender.com/graphql 
     
     documents: "**/*.{tsx,ts}", //all typescript files in current directory
     generates: {
